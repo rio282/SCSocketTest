@@ -57,9 +57,10 @@ class Server(Connection, ABC):
                 # on new incoming connection
                 client_connection, client_address = self.server_socket.accept()  # returns connection with client and its address
                 # check if we can handle more incoming connections
-                if threading.active_count() > max_server_threads:
-                    client_connection.close()
+                if threading.activeCount() > max_server_threads:
                     print(f"[SERVER] Could not establish connection with client; limit reached ({allowed_connections})")
+                    client_connection.send(bytes("Can't connect to server: too many clients.", self.encoding_format))
+                    client_connection.close()
                     continue
 
                 # start client thread
@@ -74,7 +75,7 @@ class Server(Connection, ABC):
     def _on_client_connect(self, client_connection: socket.socket, client_address: str) -> None:
         self.clients.append(client_connection)
         print(f"[SERVER] Received incoming connection from {client_address[0]}")
-        print(f"[SERVER] Active clients: {threading.active_count() - 1}")
+        print(f"[SERVER] Active clients: {len(self.clients)}")
         connected = True
         while connected:
             incoming = str(client_connection.recv(self.buffer).decode(self.encoding_format))
@@ -89,9 +90,10 @@ class Server(Connection, ABC):
                 self._handle_incoming_packets(incoming, client_connection, client_address)
 
     def __on_client_disconnect(self, client_connection: socket.socket, client_address: str) -> None:
+        client_connection.close()
         self.clients.remove(client_connection)
         print(f"[SERVER] Client {client_address[0]} disconnected.")
-        print(f"[SERVER] Active clients: {threading.active_count() - 1}")
+        print(f"[SERVER] Active clients: {len(self.clients)}")
 
     def _send_to_all_clients(self, message: str) -> None:
         for client in self.clients:

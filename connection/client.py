@@ -45,6 +45,7 @@ class Client(Connection, ABC):
 
     def disconnect(self) -> None:
         # close connection
+        self.flush_socket(self.client_socket)
         self.client_socket.close()
         print(f"[CLIENT] Disconnected from server {self.server_address}:{self.port}")
 
@@ -69,7 +70,7 @@ class Client(Connection, ABC):
         elif cmd in cmd_file:
             self._send_file(" ".join(tokens))
         elif cmd in cmd_disconnect:
-            print(f"[CLIENT] Disconnecting from server {self.server_address}")
+            print(f"[CLIENT] Disconnecting from server {self.server_address}...")
             self.client_socket.send(bytes(self.client_disconnect_request, self.encoding_format))
             self.flush_socket(self.client_socket)
             self.client_socket.close()
