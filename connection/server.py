@@ -51,9 +51,9 @@ class Server(Connection, ABC):
         sys.exit(0)
 
     def _wait_for_clients(self) -> None:
-        try:
-            # wait for clients and handle their connections
-            while True:
+        # wait for clients and handle their connections
+        while True:
+            try:
                 # on new incoming connection
                 client_connection, client_address = self.server_socket.accept()  # returns connection with client and its address
                 # check if we can handle more incoming connections
@@ -63,14 +63,17 @@ class Server(Connection, ABC):
                     continue
 
                 # start client thread
-                client_thread = threading.Thread(target=self._on_client_connect, args=(client_connection, client_address))
+                client_thread = threading.Thread(target=self._on_client_connect,
+                                                 args=(client_connection, client_address))
                 client_thread.start()
-        except KeyboardInterrupt:
-            self.close_server()
+            except KeyboardInterrupt:
+                print("[!] Detected KeyboardInterrupt!")
+                break
+        self.close_server()
 
     def _on_client_connect(self, client_connection: socket.socket, client_address: str) -> None:
         self.clients.append(client_connection)
-        print(f"[SERVER] Received incoming connection from {client_address}")
+        print(f"[SERVER] Received incoming connection from {client_address[0]}")
         print(f"[SERVER] Active clients: {threading.active_count() - 1}")
         connected = True
         while connected:
@@ -87,7 +90,8 @@ class Server(Connection, ABC):
 
     def __on_client_disconnect(self, client_connection: socket.socket, client_address: str) -> None:
         self.clients.remove(client_connection)
-        print(f"[SERVER] Disconnected client: {client_address}")
+        print(f"[SERVER] Client {client_address[0]} disconnected.")
+        print(f"[SERVER] Active clients: {threading.active_count() - 1}")
 
     def _send_to_all_clients(self, message: str) -> None:
         for client in self.clients:
@@ -99,10 +103,11 @@ class Server(Connection, ABC):
             self._handle_file_download(incoming, client_connection, client_address)
         # if its just plain text
         else:
-            print(f"{client_address}: {incoming}")
-            client_connection.send(bytes("[SERVER] Received text (OK)!", self.encoding_format))
+            print(f"{client_address[0]}: {incoming}")
+            client_connection.send(bytes("Received text (OK)!", self.encoding_format))
 
-    def _handle_file_download(self, file_properties: str, client_connection: socket.socket, client_address: str) -> None:
+    def _handle_file_download(self, file_properties: str, client_connection: socket.socket,
+                              client_address: str) -> None:
         # read file properties
         file_name = file_properties[file_properties.find("<") + 1:file_properties.find("+")]
         file_size = int(file_properties[file_properties.find("+") + 1:file_properties.find(">")])
@@ -127,7 +132,7 @@ class Server(Connection, ABC):
             # print out data read
             sys.stdout.write("\033[2K\033[1G")  # start on the same line
             print(
-                f"[SERVER] Client: {client_address} -- Downloading file... {Format.file_size(read)}/{Format.file_size(file_size)} ({(read / file_size * 100):.2f}%)",
+                f"[SERVER] Client: {client_address[0]} -- Downloading file... {Format.file_size(read)}/{Format.file_size(file_size)} ({(read / file_size * 100):.2f}%)",
                 end="\r")
         temp_file.close()
 
@@ -146,4 +151,3 @@ class Server(Connection, ABC):
         client_connection.send(
             bytes(f"[SERVER] Uploaded file \'{file_name}\' ({Format.file_size(file_size)}) to server!",
                   self.encoding_format))
-

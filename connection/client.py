@@ -26,7 +26,9 @@ class Client(Connection, ABC):
             try:
                 # handle request
                 outgoing = input("CLIENT_<You>~$ ")
-                self._command_handler(outgoing.split(" "))
+                valid_command = self._command_handler(outgoing.split(" "))
+                if not valid_command:
+                    continue
 
                 # handle server response
                 response = self.client_socket.recv(self.buffer).decode(self.encoding_format)
@@ -46,7 +48,7 @@ class Client(Connection, ABC):
         self.client_socket.close()
         print(f"[CLIENT] Disconnected from server {self.server_address}:{self.port}")
 
-    def _command_handler(self, tokens: List[str]) -> None:
+    def _command_handler(self, tokens: List[str]) -> bool:
         # commands
         cmd_text = ["text", "t"]
         cmd_encrypted_text = ["enc_text", "et"]
@@ -57,7 +59,7 @@ class Client(Connection, ABC):
         cmd = tokens[0]
         tokens = tokens[1:]
         if cmd == "":  # if we get no command we just return
-            return
+            return False
 
         # actual commands
         if cmd in cmd_text:
@@ -76,6 +78,8 @@ class Client(Connection, ABC):
             sys.exit(0)
         else:
             print(f"[!] Command \'{cmd}\' unknown.")
+            return False
+        return True
 
     def _send_tokens(self, tokens: List[str]) -> None:
         self.client_socket.send(bytes(" ".join(str(token) for token in tokens), encoding=self.encoding_format))
