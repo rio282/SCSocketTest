@@ -25,15 +25,16 @@ def setup_logger():
 def main(argv) -> None:
     exit_code: int = 0
     try:
-        if argv.server and not argv.client:  # if we want to run the server and not client
-            print(f"[i] Default port: {default_port}")
+        print(f"[i] Default port: {default_port}")
+        if argv.server and not argv.client_socket:  # if we want to run the server and not client
             port = input("Server port you want to use: ")
-
-            # TODO: perform check if int
-            server = Server(int(port))
+            server = Server(port)
             server.start_server()
         else:
-            client = Client()
+            server_address = input("Sever address: ")
+            port = input("Server port: ")
+            client = Client(server_address, port)
+            client.connect()
     except Exception as e:
         error("Error: ", e)
         exit_code = 1

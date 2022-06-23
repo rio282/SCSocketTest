@@ -1,17 +1,12 @@
-import os
 import sys
-import socket
-import time
 import threading
 from abc import ABC
 from queue import Queue
-from typing import Final, List
-from pathlib import Path
-from logging import log, debug, error, INFO, DEBUG, ERROR
+from typing import List
 
-from util import FileHandler, Crypto, Format
-from util.Windows import Windows
 from connection.connection import *
+from util import FileHandler, Format
+from util.Windows import Windows
 
 # server settings
 allowed_connections: Final[int] = 5
@@ -34,36 +29,44 @@ class Server(Connection, ABC):
     # public
     def start_server(self) -> bool:
         try:
-            print("[!] Starting server...")
-            debug("Starting server...")
+            print("[SERVER] Starting server...")
 
             # bind server socket and listen for incoming connections
             self.server_socket.bind((self.host_address, self.port))
             self.server_socket.listen(allowed_connections)
 
-            print(f"[!] Hosting server on {self.host_address}:{self.port}")
-            debug(f"Hosting server on {self.host_address}:{self.port}")
-
+            print(f"[SERVER] Hosting server on {self.host_address}:{self.port}")
             self._wait_for_clients()
         except Exception as e:
             error("Error: ", e)
             return False
         return True
 
-    def _wait_for_clients(self) -> None:
-        # wait for clients and handle their connections
-        while True:
-            # on new incoming connection
-            client_connection, client_address = self.server_socket.accept()  # returns connection with client and its address
-            # check if we can handle more incoming connections
-            if threading.active_count() > max_server_threads:
-                client_connection.close()
-                print(f"[SERVER] Could not establish connection with client; limit reached ({allowed_connections})")
-                continue
+    def close_server(self) -> None:
+        print("[SERVER] Closing server...")
+        self._send_to_all_clients("[SERVER] Server closed.")
+        self.flush_socket(self.server_socket)
+        self.server_socket.close()
+        print("[SERVER] Closed server.")
+        sys.exit(0)
 
-            # start client thread
-            client_thread = threading.Thread(target=self._on_client_connect, args=(client_connection, client_address))
-            client_thread.start()
+    def _wait_for_clients(self) -> None:
+        try:
+            # wait for clients and handle their connections
+            while True:
+                # on new incoming connection
+                client_connection, client_address = self.server_socket.accept()  # returns connection with client and its address
+                # check if we can handle more incoming connections
+                if threading.active_count() > max_server_threads:
+                    client_connection.close()
+                    print(f"[SERVER] Could not establish connection with client; limit reached ({allowed_connections})")
+                    continue
+
+                # start client thread
+                client_thread = threading.Thread(target=self._on_client_connect, args=(client_connection, client_address))
+                client_thread.start()
+        except KeyboardInterrupt:
+            self.close_server()
 
     def _on_client_connect(self, client_connection: socket.socket, client_address: str) -> None:
         self.clients.append(client_connection)
@@ -78,31 +81,28 @@ class Server(Connection, ABC):
                 connected = False
             # server close request
             elif incoming == self.server_close_request:
-                self._send_to_all_clients("[SERVER] Server closed.")
-                self.flush_socket()
-                self.server_socket.close()
-                sys.exit(0)
+                self.close_server()
             else:
                 self._handle_incoming_packets(incoming, client_connection, client_address)
 
-    def __on_client_disconnect(self, client_connection: socket.socket, client_address: str):
+    def __on_client_disconnect(self, client_connection: socket.socket, client_address: str) -> None:
         self.clients.remove(client_connection)
         print(f"[SERVER] Disconnected client: {client_address}")
 
-    def _send_to_all_clients(self, message: str):
+    def _send_to_all_clients(self, message: str) -> None:
         for client in self.clients:
             client.send(bytes(message, self.encoding_format))
 
     def _handle_incoming_packets(self, incoming: str, client_connection: socket.socket, client_address: str) -> None:
         # if file
         if incoming.startswith(self.file_header):
-            self.handle_file_download(incoming, client_connection, client_address)
+            self._handle_file_download(incoming, client_connection, client_address)
         # if its just plain text
         else:
             print(f"{client_address}: {incoming}")
             client_connection.send(bytes("[SERVER] Received text (OK)!", self.encoding_format))
 
-    def handle_file_download(self, file_properties: str, client_connection: socket.socket, client_address: str):
+    def _handle_file_download(self, file_properties: str, client_connection: socket.socket, client_address: str) -> None:
         # read file properties
         file_name = file_properties[file_properties.find("<") + 1:file_properties.find("+")]
         file_size = int(file_properties[file_properties.find("+") + 1:file_properties.find(">")])
@@ -146,3 +146,4 @@ class Server(Connection, ABC):
         client_connection.send(
             bytes(f"[SERVER] Uploaded file \'{file_name}\' ({Format.file_size(file_size)}) to server!",
                   self.encoding_format))
+

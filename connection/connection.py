@@ -1,7 +1,7 @@
 import socket
 from abc import abstractmethod
+from logging import error
 from typing import Final
-from logging import log, debug, error, INFO, DEBUG, ERROR
 
 
 class Connection:
@@ -30,7 +30,7 @@ class Connection:
             # doesn't even have to be reachable
             s.connect(("10.255.255.255", 1))
             ip = s.getsockname()[0]
-        except Exception:
+        except:
             ip = "127.0.0.1"
         finally:
             s.close()
@@ -57,15 +57,6 @@ class Connection:
     def flush_socket(sock: socket.socket) -> None:
         f = sock.makefile()
         f.flush()
-
-    # abstracts
-    @abstractmethod
-    def create_socket(self) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def close_connection(self) -> None:
-        raise NotImplementedError()
 
 
 default_port: Final[int] = 55555
