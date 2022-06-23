@@ -68,7 +68,7 @@ class Server(Connection, ABC):
                 client_thread = threading.Thread(target=self._on_client_connect,
                                                  args=(client_connection, client_address))
                 client_thread.start()
-            except KeyboardInterrupt:
+            except KeyboardInterrupt:  # TODO: fix this
                 print("[!] Detected KeyboardInterrupt!")
                 break
         self.close_server()
