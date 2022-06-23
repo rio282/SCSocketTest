@@ -2,39 +2,44 @@
 import os
 import sys
 import argparse
-from util.ModuleInstaller import install_modules
 from typing import Final
+import logging
+from logging import log, debug, error, INFO, DEBUG, ERROR
+from datetime import datetime
+
+from util.ModuleInstaller import install_modules
+from connection.server import Server
+from connection.client import Client
+from connection.connection import default_port
 
 app_id: Final[str] = "PACKET_SERVICE_COMMUNICATOR"
 
 
+def setup_logger():
+    filename = "%Y-%d-%m %H-%M-%S"
+    filename = f"LOG__{datetime.strftime(datetime.now(), filename)}.log".replace(" ", "__")
+    logging.basicConfig(level=logging.INFO, filename=f"./logs/{filename}", filemode="w+",
+                        format="[%(asctime)-15s] (%(levelname)s) %(message)s")
+
+
 def main(argv) -> None:
+    exit_code: int = 0
     try:
         if argv.server and not argv.client:  # if we want to run the server and not client
-            os.system("title [SERVER]")
-            print(f"[i] Default port: {Connection.default_port}")
+            print(f"[i] Default port: {default_port}")
             port = input("Server port you want to use: ")
 
-            # check port
-            port = Connection.default_port if port == "" else int(port)
-            if not Connection.is_valid_port(int(port)):
-                print(f"[!] \"{port}\" is not a valid port.")
-                main(argv)
-
-            # create server connection for clients to connect to
-            connection = Connection.Server(port)
-            connection.host()
+            # TODO: perform check if int
+            server = Server(int(port))
+            server.start_server()
         else:
-            os.system("title [CLIENT]")
-            connection = Connection.Client()
-            connection.use()
-    except Exception as ex:
-        print("Error:", ex)
-        os.system("pause")
-        sys.exit(1)
+            client = Client()
+    except Exception as e:
+        error("Error: ", e)
+        exit_code = 1
     finally:
         os.system("pause")
-        sys.exit(0)
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":
@@ -48,6 +53,5 @@ if __name__ == "__main__":
 
     # check for installed modules
     install_modules()
-    import Connection
-
+    setup_logger()
     main(args)

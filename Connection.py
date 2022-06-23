@@ -1,3 +1,4 @@
+# TODO: remove file once we're done working on the other ones
 import os
 import sys
 import socket
@@ -145,6 +146,7 @@ class Client:
 
         # actual commands
         if not self.connected:
+            print("[i] Bro... You\'re not even connected to a server. What are you smoking rn?")
             return False
         elif cmd in cmd_text:
             self._send_tokens(tokens)
