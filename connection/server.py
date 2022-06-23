@@ -60,6 +60,7 @@ class Server(Connection, ABC):
                 if threading.activeCount() > max_server_threads:
                     print(f"[SERVER] Could not establish connection with client; limit reached ({allowed_connections})")
                     client_connection.send(bytes("Can't connect to server: too many clients.", self.encoding_format))
+                    self.flush_socket(client_connection)
                     client_connection.close()
                     continue
 
