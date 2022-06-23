@@ -75,6 +75,7 @@ class Server(Connection, ABC):
     def _on_client_connect(self, client_connection: socket.socket, client_address: Tuple[str, str]) -> None:
         self.clients.append(client_connection)
         print(f"[SERVER] Received incoming connection from {client_address[0]}")
+        print(f"[SERVER] Assigned new client id: {self.address_to_id(client_address)}")
         print(f"[SERVER] Active clients: {len(self.clients)}")
         connected = True
         while connected:
@@ -92,7 +93,7 @@ class Server(Connection, ABC):
     def __on_client_disconnect(self, client_connection: socket.socket, client_address: Tuple[str, str]) -> None:
         client_connection.close()
         self.clients.remove(client_connection)
-        print(f"[SERVER] Client {client_address[0]} disconnected.")
+        print(f"[SERVER] Client {self.address_to_id(client_address)} disconnected.")
         print(f"[SERVER] Active clients: {len(self.clients)}")
 
     def _send_to_all_clients(self, message: str) -> None:
