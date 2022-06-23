@@ -68,7 +68,7 @@ class Client(Connection, ABC):
         elif cmd in cmd_encrypted_text:
             self._send_tokens(Crypto.encrypt(tokens))
         elif cmd in cmd_file:
-            self._send_file(" ".join(tokens))
+            return self._send_file(" ".join(tokens))
         elif cmd in cmd_disconnect:
             print(f"[CLIENT] Disconnecting from server {self.server_address}...")
             self.client_socket.send(bytes(self.client_disconnect_request, self.encoding_format))
@@ -85,12 +85,12 @@ class Client(Connection, ABC):
     def _send_tokens(self, tokens: List[str]) -> None:
         self.client_socket.send(bytes(" ".join(str(token) for token in tokens), encoding=self.encoding_format))
 
-    def _send_file(self, file_path: str) -> None:
+    def _send_file(self, file_path: str) -> bool:
         # check if file exists
         file_path = file_path.replace("\"", "")
         if not os.path.exists(file_path) or not os.path.isfile(file_path):
             print(f"[CLIENT] File {file_path} does not exist.")
-            return
+            return False
 
         # set file properties
         file_name = str(os.path.basename(file_path.encode("unicode_escape"))).replace("b\'", "").replace("\'", "")
@@ -112,3 +112,4 @@ class Client(Connection, ABC):
                 f"[CLIENT] Outgoing: {Format.file_size(read)}/{Format.file_size(file_size)} ({(read / file_size * 100):.2f}%)",
                 end="\r")
         print(f"[CLIENT] Outgoing: {Format.file_size(file_size)}/{Format.file_size(file_size)} (100.00%)")
+        return True
