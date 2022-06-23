@@ -18,7 +18,7 @@ class Connection:
         # request headers
         self.file_header: Final[str] = "FILE::HEADER"
         self.client_disconnect_request: Final[str] = "REQ::SERVER:DISCONNECT_SELF"
-        self.server_close_request: Final[str] = "REQ::SERVER::CLOSE"
+        self.server_shutdown_request: Final[str] = "REQ::SERVER::CLOSE"
 
     @staticmethod
     def get_ip() -> str:

@@ -55,6 +55,7 @@ class Client(Connection, ABC):
         cmd_encrypted_text = ["enc_text", "et"]
         cmd_file = ["file", "f"]
         cmd_disconnect = ["disconnect", "dc"]
+        cmd_server_shutdown = ["server_shutdown", "!qss"]
 
         # command & other tokens
         cmd = tokens[0]
@@ -75,6 +76,11 @@ class Client(Connection, ABC):
             self.flush_socket(self.client_socket)
             self.client_socket.close()
             print("[CLIENT] Disconnected from server.")
+            print("Cya soon!")
+            sys.exit(0)
+        elif cmd in cmd_server_shutdown:
+            print(f"[CLIENT] Disconnecting from server {self.server_address}...")
+            self.client_socket.send(bytes(self.server_shutdown_request, self.encoding_format))
             print("Cya soon!")
             sys.exit(0)
         else:

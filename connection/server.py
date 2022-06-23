@@ -85,7 +85,7 @@ class Server(Connection, ABC):
                 self.__on_client_disconnect(client_connection, client_address)
                 connected = False
             # server close request
-            elif incoming == self.server_close_request:
+            elif incoming == self.server_shutdown_request:
                 self.close_server()
             else:
                 self._handle_incoming_packets(incoming, client_connection, client_address)
