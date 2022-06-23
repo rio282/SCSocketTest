@@ -102,7 +102,7 @@ class Client(Connection, ABC):
 
         # send file data
         read = 0
-        for chunk in FileHandler.read_chunks(file_path, c.buffer):
+        for chunk in FileHandler.read_chunks(file_path, self.buffer):
             self.client_socket.send(chunk)
             read += len(chunk)
 
