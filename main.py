@@ -26,7 +26,7 @@ def main(argv) -> None:
     exit_code: int = 0
     try:
         print(f"[i] Default port: {default_port}")
-        if argv.server and not argv.client_socket:  # if we want to run the server and not client
+        if argv.server and not argv.client:  # if we want to run the server and not client
             port = input("Server port you want to use: ")
             server = Server(port)
             server.start_server()
