@@ -17,7 +17,6 @@ windows: Final[Windows] = Windows()
 downloads_folder: Final[str] = windows.get_downloads_folder()
 
 
-# TODO: instead of print use logging.log
 class Server(Connection, ABC):
     def __init__(self, port: int) -> None:
         super().__init__(port)
@@ -38,7 +37,7 @@ class Server(Connection, ABC):
             print(f"[SERVER] Hosting server on {self.host_address}:{self.port}")
             self._wait_for_clients()
         except Exception as e:
-            error("Error: ", e)
+            print("Error: ", e)
             return False
         return True
 
@@ -73,7 +72,7 @@ class Server(Connection, ABC):
                 break
         self.close_server()
 
-    def _on_client_connect(self, client_connection: socket.socket, client_address: str) -> None:
+    def _on_client_connect(self, client_connection: socket.socket, client_address: Tuple[str, str]) -> None:
         self.clients.append(client_connection)
         print(f"[SERVER] Received incoming connection from {client_address[0]}")
         print(f"[SERVER] Active clients: {len(self.clients)}")
@@ -90,7 +89,7 @@ class Server(Connection, ABC):
             else:
                 self._handle_incoming_packets(incoming, client_connection, client_address)
 
-    def __on_client_disconnect(self, client_connection: socket.socket, client_address: str) -> None:
+    def __on_client_disconnect(self, client_connection: socket.socket, client_address: Tuple[str, str]) -> None:
         client_connection.close()
         self.clients.remove(client_connection)
         print(f"[SERVER] Client {client_address[0]} disconnected.")
@@ -100,21 +99,22 @@ class Server(Connection, ABC):
         for client in self.clients:
             client.send(bytes(message, self.encoding_format))
 
-    def _handle_incoming_packets(self, incoming: str, client_connection: socket.socket, client_address: str) -> None:
+    def _handle_incoming_packets(self, incoming: str, client_connection: socket.socket,
+                                 client_address: Tuple[str, str]) -> None:
         # if file
         if incoming.startswith(self.file_header):
             self._handle_file_download(incoming, client_connection, client_address)
         # if its just plain text
         else:
-            print(f"{client_address[0]}: {incoming}")
+            print(f"[CLIENT] {self.address_to_id(client_address)}: {incoming}")
             client_connection.send(bytes("Received text (OK)!", self.encoding_format))
 
     def _handle_file_download(self, file_properties: str, client_connection: socket.socket,
-                              client_address: str) -> None:
+                              client_address: Tuple[str, str]) -> None:
         # read file properties
         file_name = file_properties[file_properties.find("<") + 1:file_properties.find("+")]
         file_size = int(file_properties[file_properties.find("+") + 1:file_properties.find(">")])
-        print(f"[!] Received header for file: \'{file_name}\' with size {Format.file_size(file_size)}")
+        print(f"[SERVER] Received header for file: \'{file_name}\' with size {Format.file_size(file_size)}")
 
         # create temp file
         temp_file_path = f"{downloads_folder}\\download_{file_name}"
@@ -135,7 +135,7 @@ class Server(Connection, ABC):
             # print out data read
             sys.stdout.write("\033[2K\033[1G")  # start on the same line
             print(
-                f"[SERVER] Client: {client_address[0]} -- Downloading file... {Format.file_size(read)}/{Format.file_size(file_size)} ({(read / file_size * 100):.2f}%)",
+                f"[SERVER] Client: {self.address_to_id(client_address)} -- Downloading file... {Format.file_size(read)}/{Format.file_size(file_size)} ({(read / file_size * 100):.2f}%)",
                 end="\r")
         temp_file.close()
 
@@ -152,5 +152,5 @@ class Server(Connection, ABC):
 
         # tell client we've downloaded their file
         client_connection.send(
-            bytes(f"[SERVER] Uploaded file \'{file_name}\' ({Format.file_size(file_size)}) to server!",
+            bytes(f"Uploaded file \'{file_name}\' ({Format.file_size(file_size)}) to server!",
                   self.encoding_format))

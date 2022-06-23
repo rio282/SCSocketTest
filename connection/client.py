@@ -12,7 +12,7 @@ class Client(Connection, ABC):
         super().__init__(port)
         server_address = localhost if server_address == "" else server_address  # if no address is supplied: use localhost
         if not self.is_valid_ipv4(server_address):
-            error(f"{server_address} is not a valid ipv4 address.")
+            print(f"{server_address} is not a valid ipv4 address.")
         self.server_address: Final[str] = server_address
         self.client_socket: Final[socket.socket] = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -25,7 +25,7 @@ class Client(Connection, ABC):
         while True:
             try:
                 # handle request
-                outgoing = input("CLIENT_<You>~$ ")
+                outgoing = input(f'CLIENT_<{self.address_to_id((localhost, "_ID"))}(You)>~$ ')
                 valid_command = self._command_handler(outgoing.split(" "))
                 if not valid_command:
                     continue

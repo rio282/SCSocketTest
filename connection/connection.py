@@ -1,7 +1,5 @@
 import socket
-from abc import abstractmethod
-from logging import error
-from typing import Final
+from typing import Final, Tuple
 
 
 class Connection:
@@ -9,9 +7,9 @@ class Connection:
         # assign port
         port = default_port if port == "" else port  # if nothing is supplied, we assign the default port
         if not self.is_valid_port(port):
-            error(f"{port} is not a valid port number.")
+            print(f"{port} is not a valid port number.")
             return
-        self.port: Final[int] = port
+        self.port: Final[int] = int(port)
 
         # connection settings
         self.buffer: Final[int] = 1024
@@ -47,8 +45,7 @@ class Connection:
     @staticmethod
     def is_valid_port(port: int) -> bool:
         try:
-            if not isinstance(port, int):
-                raise ValueError()
+            port = int(port)
             return 1 <= port <= 65535
         except:
             return False
@@ -57,6 +54,10 @@ class Connection:
     def flush_socket(sock: socket.socket) -> None:
         f = sock.makefile()
         f.flush()
+
+    @staticmethod
+    def address_to_id(address: Tuple[str, str]):
+        return f"{address[0].replace('.', '')}_{address[1]}"
 
 
 default_port: Final[int] = 55555
